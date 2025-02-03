@@ -1,0 +1,6 @@
+@QuipperCodeCompiler.Server_HostAddress = http://localhost:5036
+
+GET {{QuipperCodeCompiler.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
