@@ -6,8 +6,19 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowReactApp",
+        policy => policy.WithOrigins("https://localhost:58938")
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+});
+
+
 
 var app = builder.Build();
+
+app.UseCors("AllowReactApp");
 
 app.UseDefaultFiles();
 app.UseStaticFiles();

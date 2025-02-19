@@ -18,6 +18,24 @@ function App() {
             language: "javascript",
             code: code,
         }
+
+        const response = await fetch("https://localhost:7024/api/CodeExecution/execute", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        const text = await response.text();  // Read response as text
+
+        if (!text) {
+            throw new Error("Empty response from server");
+        }
+
+        const data = JSON.parse(text); // Convert to JSON
+        console.log(data);
+        setOutput(data.output);
         console.log("Button clicked!");
         await new Promise((resolve) => setTimeout(resolve, 2000));
         console.log("Operation complete!");
@@ -27,9 +45,9 @@ function App() {
         <div>
             <h1> Hello World! </h1>
             <p>This component demonstrates fetching data from the server.</p>
-            <Editor />
+            <Editor setCode={setCode} />
             <MyButton onClick={handleButtonClick} label="Submit" />
-            <OutputBox output={"test"} />
+            <OutputBox output={output} />
 
         </div>
     );

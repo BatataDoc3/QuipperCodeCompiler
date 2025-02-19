@@ -8,17 +8,27 @@ import { history, historyKeymap } from "@codemirror/commands";
 import { oneDark } from "@codemirror/theme-one-dark";  // Import the one-dark theme
 import { basicSetup } from "codemirror";
 
-export const Editor = () => {
+
+export const Editor = ({ setCode }) => {
     const editorRef = useRef(null);
 
     useEffect(() => {
         if (!editorRef.current) return;
 
         const state = EditorState.create({
-            doc: "Hello World",
-            extensions: [basicSetup,
+            doc: "Hello World", // Default content
+            extensions: [
+                basicSetup,
                 oneDark,
-                javascript()],
+                javascript(),
+                EditorView.updateListener.of((update) => {
+                    if (update.docChanged) {
+                        // This will capture changes in the editor
+                        const newCode = update.state.doc.toString();
+                        setCode(newCode);  // Update the state with the new content
+                    }
+                })
+            ],
         });
 
         const view = new EditorView({
@@ -27,11 +37,11 @@ export const Editor = () => {
         });
         view.dom.style.textAlign = "left";
 
-
         return () => view.destroy();
-    }, []);
+    }, [setCode]);  // Ensure `setCode` is included as a dependency
 
     return <div ref={editorRef} style={{ border: "1px solid #ccc", padding: "10px" }}></div>;
 };
 
 export default Editor;
+
