@@ -1,1 +1,0 @@
-string filePath = Path.Combine(Directory.GetCurrentDirectory(), "../CodeFiles/generated_code.hs");

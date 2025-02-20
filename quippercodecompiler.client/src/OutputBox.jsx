@@ -11,7 +11,7 @@ export const OutputBox = ({ output }) => {
                 borderRadius: "5px",
                 fontFamily: "monospace",
                 whiteSpace: "pre-wrap",
-                maxHeight: "200px",
+                maxHeight: "500px",
                 overflowY: "auto",
             }}
         >
