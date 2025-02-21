@@ -74,7 +74,7 @@ public class CodeExecutionController : ControllerBase
 
     private string ExecuteFile()
     {
-        string command = "ghc CodeFiles/generated_code.hs";
+        string command = "ghc -package quipper-language CodeFiles/generated_code.hs";
 
         ProcessStartInfo psi = new ProcessStartInfo
         {
