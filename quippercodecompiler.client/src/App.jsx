@@ -9,6 +9,7 @@ function App() {
 
 
     const [output, setOutput] = useState("");  // Output from the execution
+    const [imageUrl, setImageUrl] = useState("");
     const [code, setCode] = useState("");  // Code entered in the editor
 
     const handleButtonClick = async () => {
@@ -27,18 +28,16 @@ function App() {
             body: JSON.stringify(requestBody)
         });
 
-        const text = await response.text();  // Read response as text
-
-        if (!text) {
-            throw new Error("Empty response from server");
+        if (response.headers.get("Content-Type").includes("image")) {
+            const blob = await response.blob();
+            setImageUrl(URL.createObjectURL(blob));
+            setOutput("");
+        } else {
+            const text = await response.text();
+            setOutput(text);
+            setImageUrl("");
         }
 
-        const data = JSON.parse(text); // Convert to JSON
-        console.log(data);
-        setOutput(data.output);
-        console.log("Button clicked!");
-        await new Promise((resolve) => setTimeout(resolve, 2000));
-        console.log("Operation complete!");
     };
 
     return (
@@ -47,7 +46,7 @@ function App() {
             <p>This component demonstrates fetching data from the server.</p>
             <Editor setCode={setCode} />
             <MyButton onClick={handleButtonClick} label="Submit" />
-            <OutputBox output={output} />
+            <OutputBox output={output} imageUrl={imageUrl} />
 
         </div>
     );

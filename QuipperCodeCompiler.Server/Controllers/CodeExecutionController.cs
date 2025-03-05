@@ -48,7 +48,15 @@ public class CodeExecutionController : ControllerBase
             Console.WriteLine("File Cleanup Error: " + ex.Message);
         }
 
-        return Ok(new { Output = output ?? "No output generated." });
+        string imagePath = "CodeFiles/output.png";
+
+        if (System.IO.File.Exists(imagePath))
+        {
+            var imageBytes = System.IO.File.ReadAllBytes(imagePath);
+            return File(imageBytes, "image/png");
+        }
+
+        return StatusCode(500, "Failed to generate image.");
     }
 
 
@@ -74,7 +82,7 @@ public class CodeExecutionController : ControllerBase
 
     private string ExecuteFile()
     {
-        string command = "ghc -package quipper-language CodeFiles/generated_code.hs";
+        string command = "ghc -package quipper-language CodeFiles/generated_code.hs > CodeFiles/output.pdf";
 
         ProcessStartInfo psi = new ProcessStartInfo
         {
@@ -102,10 +110,10 @@ public class CodeExecutionController : ControllerBase
         }
 
         // Step 2: Run the compiled Haskell program
-        string exeName = "CodeFiles\\generated_code.exe"; // On Windows
+        string exeName = "chcp 65001 && CodeFiles\\generated_code.exe > CodeFiles\\output.eps"; // On Windows
         if (Environment.OSVersion.Platform == PlatformID.Unix)
         {
-            exeName = "./CodeFiles/generated_code"; // On Linux/macOS
+            exeName = "./CodeFiles/generated_code | Out-File .\\thing.ps -Encoding default"; // On Linux/macOS
         }
 
         psi = new ProcessStartInfo
@@ -136,6 +144,22 @@ public class CodeExecutionController : ControllerBase
             }
 
             Console.WriteLine("Program Output:\n" + output);
+        }
+
+        psi = new ProcessStartInfo
+        {
+            FileName = "gswin64c",
+            Arguments = "-dNOPAUSE -dBATCH -dEPSCrop -r300 -sDEVICE=pngalpha -sOutputFile=\"CodeFiles\\output.png\" CodeFiles\\output.eps",
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using (Process process = Process.Start(psi))
+        {
+            string output = process.StandardOutput.ReadToEnd();
+            process.WaitForExit();
+
             return output;
         }
     }
