@@ -4,6 +4,8 @@ import CodeMirror from "@uiw/react-codemirror";
 import { Editor } from "./Editor"
 import { MyButton } from "./MyButton"
 import { OutputBox } from "./OutputBox"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/Tabs"
+
 
 function App() {
 
@@ -11,6 +13,14 @@ function App() {
     const [output, setOutput] = useState("");  // Output from the execution
     const [imageUrl, setImageUrl] = useState("");
     const [code, setCode] = useState("");  // Code entered in the editor
+    const [files, setFiles] = useState({})
+
+    useEffect(() => {
+        fetch("https://localhost:7024/api/CodeExecution/getCodeExamples")
+            .then((response) => response.json())
+            .then((data) => setFiles(data))
+            .catch((error) => console.error("Error fetching data:", error));
+    }, []); // Empty dependency array = runs only on mount
 
     const handleButtonClick = async () => {
 
@@ -42,9 +52,29 @@ function App() {
 
     return (
         <div>
-            <h1> Hello World! </h1>
-            <p>This component demonstrates fetching data from the server.</p>
-            <Editor setCode={setCode} />
+            <h1>Qiupper code compiler</h1>
+            <p>To use this tool correctly, make sure you are outputing the result to either EPS or PDF format. PS still outputs the circuit but on a smaller scale.</p>
+            <p>You can check the examples provided in case of question</p>
+            <Tabs defaultValue="code" className="w-[400px]">
+                <TabsList>
+                    <TabsTrigger value="code">Code</TabsTrigger>
+                    {Object.keys(files).map((key) => (
+                        <TabsTrigger key={key} value={key}>
+                            {key}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+
+                <TabsContent value="code">
+                    <Editor code={"hello wold"} setCode={setCode} />
+                </TabsContent>
+
+                {Object.entries(files).map(([key, content]) => (
+                    <TabsContent key={key} value={key}>
+                        <Editor code={content} setCode={setCode} />
+                    </TabsContent>
+                ))}
+            </Tabs>
             <MyButton onClick={handleButtonClick} label="Submit" />
             <OutputBox output={output} imageUrl={imageUrl} />
 

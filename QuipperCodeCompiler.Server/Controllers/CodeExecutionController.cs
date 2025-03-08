@@ -11,6 +11,8 @@ using System.Diagnostics;
 [Route("api/[controller]")]
 public class CodeExecutionController : ControllerBase
 {
+    string defaultAlgorithmsDirectory = "DefaultAlgorithms/"; 
+
     string filePath = Path.Combine(Directory.GetCurrentDirectory(), "CodeFiles/generated_code.hs");
     string hsFilePath = "CodeFiles/generated_code.hs";
     string exeFilePath = "CodeFiles/generated_code.exe";
@@ -21,6 +23,22 @@ public class CodeExecutionController : ControllerBase
     public CodeExecutionController(ILogger<CodeExecutionController> logger)
     {
         _logger = logger;
+    }
+
+
+    [HttpGet("getCodeExamples")]
+    public async Task<IActionResult> GetCodeExamples()
+    {
+        _logger.LogInformation("Getting code files");
+        var files = Directory.GetFiles(defaultAlgorithmsDirectory, "*.hs")
+                                .ToDictionary(Path.GetFileName, async file => await System.IO.File.ReadAllTextAsync(file));
+        var result = new Dictionary<string, string>();
+        foreach (var file in files)
+        {
+            result[file.Key] = await file.Value;
+        }
+
+        return Ok(result);
     }
 
     [HttpPost("execute")]

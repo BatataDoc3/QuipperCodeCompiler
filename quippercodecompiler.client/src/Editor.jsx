@@ -9,14 +9,14 @@ import { oneDark } from "@codemirror/theme-one-dark";  // Import the one-dark th
 import { basicSetup } from "codemirror";
 
 
-export const Editor = ({ setCode }) => {
+export const Editor = ({code, setCode }) => {
     const editorRef = useRef(null);
 
     useEffect(() => {
         if (!editorRef.current) return;
 
         const state = EditorState.create({
-            doc: "Hello World", // Default content
+            doc: code, // Default content
             extensions: [
                 basicSetup,
                 oneDark,
@@ -36,7 +36,7 @@ export const Editor = ({ setCode }) => {
             parent: editorRef.current,
         });
         view.dom.style.textAlign = "left";
-
+        setCode(code);
         return () => view.destroy();
     }, [setCode]);  // Ensure `setCode` is included as a dependency
 
