@@ -71,5 +71,4 @@ print_final =  print_simple EPS (do
 
 main :: IO ()
 main = do
-  -- Your program logic here
   print_final

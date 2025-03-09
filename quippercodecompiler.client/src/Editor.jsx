@@ -1,12 +1,10 @@
 import { useRef, useEffect } from "react";
-import { keymap, highlightActiveLineGutter } from "@codemirror/view";
 import { EditorState } from "@codemirror/state";
-import { defaultKeymap } from "@codemirror/commands";
-import { javascript } from "@codemirror/lang-javascript"; // Use Quipper syntax later
-import { EditorView, lineNumbers, highlightActiveLine, drawSelection} from "@codemirror/view";
-import { history, historyKeymap } from "@codemirror/commands";
-import { oneDark } from "@codemirror/theme-one-dark";  // Import the one-dark theme
+import { EditorView} from "@codemirror/view";
+import { oneDark } from "@codemirror/theme-one-dark"; 
 import { basicSetup } from "codemirror";
+import { StreamLanguage } from "@codemirror/language";
+import { haskell } from "@codemirror/legacy-modes/mode/haskell";
 
 
 export const Editor = ({code, setCode }) => {
@@ -20,12 +18,11 @@ export const Editor = ({code, setCode }) => {
             extensions: [
                 basicSetup,
                 oneDark,
-                javascript(),
+                StreamLanguage.define(haskell),
                 EditorView.updateListener.of((update) => {
                     if (update.docChanged) {
-                        // This will capture changes in the editor
                         const newCode = update.state.doc.toString();
-                        setCode(newCode);  // Update the state with the new content
+                        setCode(newCode); 
                     }
                 })
             ],
@@ -38,7 +35,7 @@ export const Editor = ({code, setCode }) => {
         view.dom.style.textAlign = "left";
         setCode(code);
         return () => view.destroy();
-    }, [setCode]);  // Ensure `setCode` is included as a dependency
+    }, [setCode]); 
 
     return <div ref={editorRef} style={{ border: "1px solid #ccc", padding: "10px" }}></div>;
 };

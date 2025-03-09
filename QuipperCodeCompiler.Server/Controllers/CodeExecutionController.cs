@@ -18,6 +18,8 @@ public class CodeExecutionController : ControllerBase
     string exeFilePath = "CodeFiles/generated_code.exe";
     string objFilePath = "CodeFiles/generated_code.o";
     string hiFilePath = "CodeFiles/generated_code.hi";
+    string epsFilePath = "CodeFiles/output.eps";
+    string pngFilePath = "CodeFiles/output.png";
     private readonly ILogger<CodeExecutionController> _logger;
 
     public CodeExecutionController(ILogger<CodeExecutionController> logger)
@@ -60,18 +62,19 @@ public class CodeExecutionController : ControllerBase
             if (System.IO.File.Exists(exeFilePath)) System.IO.File.Delete(exeFilePath);
             if (System.IO.File.Exists(objFilePath)) System.IO.File.Delete(objFilePath);
             if (System.IO.File.Exists(hiFilePath)) System.IO.File.Delete(hiFilePath);
+            if (System.IO.File.Exists(epsFilePath)) System.IO.File.Delete(epsFilePath);
         }
         catch (Exception ex)
         {
             Console.WriteLine("File Cleanup Error: " + ex.Message);
         }
 
-        string imagePath = "CodeFiles/output.png";
 
-        if (System.IO.File.Exists(imagePath))
+        if (System.IO.File.Exists(pngFilePath))
         {
-            var imageBytes = System.IO.File.ReadAllBytes(imagePath);
+            var imageBytes = System.IO.File.ReadAllBytes(pngFilePath);
             return File(imageBytes, "image/png");
+
         }
 
         return StatusCode(500, "Failed to generate image.");

@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import './App.css';
-import CodeMirror from "@uiw/react-codemirror";
 import { Editor } from "./Editor"
 import { MyButton } from "./MyButton"
 import { OutputBox } from "./OutputBox"
@@ -10,9 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/Tabs"
 function App() {
 
 
-    const [output, setOutput] = useState("");  // Output from the execution
+    const [output, setOutput] = useState("");
     const [imageUrl, setImageUrl] = useState("");
-    const [code, setCode] = useState("");  // Code entered in the editor
+    const [code, setCode] = useState(""); 
     const [files, setFiles] = useState({})
 
     useEffect(() => {
@@ -20,13 +19,13 @@ function App() {
             .then((response) => response.json())
             .then((data) => setFiles(data))
             .catch((error) => console.error("Error fetching data:", error));
-    }, []); // Empty dependency array = runs only on mount
+    }, []);
 
     const handleButtonClick = async () => {
 
-        // Simulate an async operation
+        
         const requestBody = {
-            language: "javascript",
+            language: "haskell",
             code: code,
         }
 
@@ -50,6 +49,11 @@ function App() {
 
     };
 
+    let defaultCode = `import Quipper
+
+main :: IO ()
+main = print_simple EPS (qinit False >>= hadamard)`
+
     return (
         <div>
             <h1>Qiupper code compiler</h1>
@@ -66,7 +70,7 @@ function App() {
                 </TabsList>
 
                 <TabsContent value="code">
-                    <Editor code={"hello wold"} setCode={setCode} />
+                    <Editor code={defaultCode} setCode={setCode} />
                 </TabsContent>
 
                 {Object.entries(files).map(([key, content]) => (
