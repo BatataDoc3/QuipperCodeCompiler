@@ -96,7 +96,7 @@ public class CodeExecutionController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error generating file.");
+            _logger.LogError(ex, "Error generating file");
             return false;
         }
     }
