@@ -11,15 +11,11 @@ using System.Diagnostics;
 [Route("api/[controller]")]
 public class CodeExecutionController : ControllerBase
 {
+
+    Random rand = new Random();
     string defaultAlgorithmsDirectory = "DefaultAlgorithms/"; 
 
-    string filePath = Path.Combine(Directory.GetCurrentDirectory(), "CodeFiles/generated_code.hs");
-    string hsFilePath = "CodeFiles/generated_code.hs";
-    string exeFilePath = "CodeFiles/generated_code.exe";
-    string objFilePath = "CodeFiles/generated_code.o";
-    string hiFilePath = "CodeFiles/generated_code.hi";
-    string epsFilePath = "CodeFiles/output.eps";
-    string pngFilePath = "CodeFiles/output.png";
+
     private readonly ILogger<CodeExecutionController> _logger;
 
     public CodeExecutionController(ILogger<CodeExecutionController> logger)
@@ -46,23 +42,36 @@ public class CodeExecutionController : ControllerBase
     [HttpPost("execute")]
     public IActionResult ExecuteCode([FromBody] CodeRequest request)
     {
-        _logger.LogInformation("Executing code in {Language}", request.Language);
+
+        var id = Math.Abs(rand.Next());
+
+        string path = Path.Combine(Directory.GetCurrentDirectory(), "CodeFiles\\" + id.ToString());
+        _logger.LogInformation("Path to be created: " + path);
+        Directory.CreateDirectory(path);
+
+
+        string filePath = Path.Combine(Directory.GetCurrentDirectory(), "CodeFiles\\" + id + "\\generated_code.hs");
+        string hsFilePath = "CodeFiles\\" + id + "\\generated_code.hs";
+        string exeFilePath = "CodeFiles\\" + id + "\\generated_code.exe";
+        string objFilePath = "CodeFiles\\" + id + "\\generated_code.o";
+        string hiFilePath = "CodeFiles\\" + id + "\\generated_code.hi";
+        string epsFilePath = "CodeFiles\\" + id + "\\output.eps";
+        string pngFilePath = "CodeFiles\\" + id + "\\output.png";
+
+
+        _logger.LogInformation("Executing code in {Language}", request.Code);
 
         // Generate file from the code if needed
-        if (!GenerateFile(request.Language, request.Code))
+        if (!GenerateFile(request.Language, request.Code, filePath))
         {
             return StatusCode(500, "Failed to generate file.");
         }
 
 
-        var output = ExecuteFile();
+        var output = ExecuteFile(hsFilePath, exeFilePath, epsFilePath, pngFilePath);
         try
         {
-            if (System.IO.File.Exists(hsFilePath)) System.IO.File.Delete(hsFilePath);
-            if (System.IO.File.Exists(exeFilePath)) System.IO.File.Delete(exeFilePath);
-            if (System.IO.File.Exists(objFilePath)) System.IO.File.Delete(objFilePath);
-            if (System.IO.File.Exists(hiFilePath)) System.IO.File.Delete(hiFilePath);
-            if (System.IO.File.Exists(epsFilePath)) System.IO.File.Delete(epsFilePath);
+            Directory.Delete("CodeFiles\\" + id);
         }
         catch (Exception ex)
         {
@@ -73,19 +82,19 @@ public class CodeExecutionController : ControllerBase
         if (System.IO.File.Exists(pngFilePath))
         {
             var imageBytes = System.IO.File.ReadAllBytes(pngFilePath);
+            Directory.Delete("CodeFiles\\" + id);
             return File(imageBytes, "image/png");
-
         }
 
         return StatusCode(500, "Failed to generate image.");
     }
 
 
-    private bool GenerateFile(string language, string code)
+    private bool GenerateFile(string language, string code, string filePath)
     {
         try
         {
-
+            _logger.LogInformation("Creating path: " + filePath);
             using (FileStream fs = System.IO.File.Create(filePath))
             {
                 byte[] info = new UTF8Encoding(true).GetBytes(code);
@@ -101,9 +110,10 @@ public class CodeExecutionController : ControllerBase
         }
     }
 
-    private string ExecuteFile()
+    private string ExecuteFile(string hsFilePath, string exeFilePath, string epsFilePath, string pngFilePath)
     {
-        string command = "ghc -package quipper-language CodeFiles/generated_code.hs > CodeFiles/output.pdf";
+        _logger.LogInformation("Executing File");
+        string command = "ghc -package quipper-language " + hsFilePath ;
 
         ProcessStartInfo psi = new ProcessStartInfo
         {
@@ -131,10 +141,10 @@ public class CodeExecutionController : ControllerBase
         }
 
         // Step 2: Run the compiled Haskell program
-        string exeName = "chcp 65001 && CodeFiles\\generated_code.exe > CodeFiles\\output.eps"; // On Windows
+        string exeName = "chcp 65001 && " + exeFilePath + " > " + epsFilePath; // On Windows
         if (Environment.OSVersion.Platform == PlatformID.Unix)
         {
-            exeName = "./CodeFiles/generated_code | Out-File .\\thing.ps -Encoding default"; // On Linux/macOS
+            exeName = "./" + exeFilePath + " | Out-File .\\thing.ps -Encoding default"; // On Linux/macOS
         }
 
         psi = new ProcessStartInfo
@@ -170,7 +180,7 @@ public class CodeExecutionController : ControllerBase
         psi = new ProcessStartInfo
         {
             FileName = "gswin64c",
-            Arguments = "-dNOPAUSE -dBATCH -dEPSCrop -r300 -sDEVICE=pngalpha -sOutputFile=\"CodeFiles\\output.png\" CodeFiles\\output.eps",
+            Arguments = "-dNOPAUSE -dBATCH -dEPSCrop -r300 -sDEVICE=pngalpha -sOutputFile=" + pngFilePath + " " + epsFilePath,
             RedirectStandardOutput = true,
             UseShellExecute = false,
             CreateNoWindow = true

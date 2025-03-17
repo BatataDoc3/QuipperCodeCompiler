@@ -1,4 +1,4 @@
-import Quipper
+﻿import Quipper
 import Quipper.Internal.Printing
 
 
