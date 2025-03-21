@@ -56,7 +56,7 @@ public class CodeExecutionController : ControllerBase
         string objFilePath = "CodeFiles\\" + id + "\\generated_code.o";
         string hiFilePath = "CodeFiles\\" + id + "\\generated_code.hi";
         string epsFilePath = "CodeFiles\\" + id + "\\output.eps";
-        string pngFilePath = "CodeFiles\\" + id + "\\output.png";
+        string jpegFilePath = "CodeFiles\\" + id + "\\output.jpeg";
 
 
         _logger.LogInformation("Executing code in {Language}", request.Code);
@@ -68,24 +68,16 @@ public class CodeExecutionController : ControllerBase
         }
 
 
-        var output = ExecuteFile(hsFilePath, exeFilePath, epsFilePath, pngFilePath);
-        try
-        {
-            Directory.Delete("CodeFiles\\" + id);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine("File Cleanup Error: " + ex.Message);
-        }
+        var output = ExecuteFile(hsFilePath, exeFilePath, epsFilePath, jpegFilePath);
 
 
-        if (System.IO.File.Exists(pngFilePath))
+        if (System.IO.File.Exists(jpegFilePath))
         {
-            var imageBytes = System.IO.File.ReadAllBytes(pngFilePath);
-            Directory.Delete("CodeFiles\\" + id);
+            var imageBytes = System.IO.File.ReadAllBytes(jpegFilePath);
+            Directory.Delete("CodeFiles\\" + id, true);
             return File(imageBytes, "image/png");
         }
-
+        Directory.Delete("CodeFiles\\" + id, true);
         return StatusCode(500, "Failed to generate image.");
     }
 
@@ -110,7 +102,7 @@ public class CodeExecutionController : ControllerBase
         }
     }
 
-    private string ExecuteFile(string hsFilePath, string exeFilePath, string epsFilePath, string pngFilePath)
+    private string ExecuteFile(string hsFilePath, string exeFilePath, string epsFilePath, string jpegFilePath)
     {
         _logger.LogInformation("Executing File");
         string command = "ghc -package quipper-language " + hsFilePath ;
@@ -180,7 +172,7 @@ public class CodeExecutionController : ControllerBase
         psi = new ProcessStartInfo
         {
             FileName = "gswin64c",
-            Arguments = "-dNOPAUSE -dBATCH -dEPSCrop -r300 -sDEVICE=pngalpha -sOutputFile=" + pngFilePath + " " + epsFilePath,
+            Arguments = "-dNOPAUSE -dBATCH -dEPSCrop -r300 -sDEVICE=jpeg -sOutputFile=" + jpegFilePath + " " + epsFilePath,
             RedirectStandardOutput = true,
             UseShellExecute = false,
             CreateNoWindow = true

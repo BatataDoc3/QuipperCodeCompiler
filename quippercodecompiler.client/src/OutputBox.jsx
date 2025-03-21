@@ -6,7 +6,7 @@ export const OutputBox = ({ output, imageUrl }) => {
             style={{
                 marginTop: "20px",
                 padding: "10px",
-                backgroundColor: "#FFFFFF",
+                backgroundColor: "#000000",
                 border: "1px solid #ddd",
                 borderRadius: "5px",
                 fontFamily: "monospace",
