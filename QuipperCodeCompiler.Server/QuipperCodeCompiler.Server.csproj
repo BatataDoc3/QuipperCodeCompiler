@@ -25,6 +25,8 @@
   <ItemGroup>
     <Folder Include="CodeFiles\" />
     <Folder Include="DefaultAlgorithms\" />
+    <Content Include="CodeFiles\**" CopyToPublishDirectory="Always" />
+    <Content Include="DefaultAlgorithms\**" CopyToPublishDirectory="Always" />
   </ItemGroup>
 
 </Project>

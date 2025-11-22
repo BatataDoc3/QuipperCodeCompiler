@@ -15,7 +15,7 @@ function App() {
     const [files, setFiles] = useState({})
 
     useEffect(() => {
-        fetch("https://localhost:7024/api/CodeExecution/getCodeExamples")
+        fetch("api/CodeExecution/getCodeExamples")
             .then((response) => response.json())
             .then((data) => setFiles(data))
             .catch((error) => console.error("Error fetching data:", error));
@@ -29,7 +29,7 @@ function App() {
             code: code,
         }
 
-        const response = await fetch("https://localhost:7024/api/CodeExecution/execute", {
+        const response = await fetch("api/CodeExecution/execute", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
