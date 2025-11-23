@@ -1,4 +1,4 @@
-    # ========================================
+# ========================================
 # Optimized Multi-Stage Dockerfile
 # Node.js TypeScript Application
 # ========================================
@@ -62,7 +62,7 @@ RUN npm run build
 RUN chown -R nodejs:nodejs /app
 
 # ========================================
-# Development Stage
+# Development Stage (UPDATED)
 # ========================================
 FROM build-deps AS development
 
@@ -76,7 +76,7 @@ COPY . .
 # Ensure all directories have proper permissions
 RUN mkdir -p /app/node_modules/.vite && \
     chown -R nodejs:nodejs /app && \
-    chmod -R 755 /app
+    chmod -R 775 /app
 
 # Switch to non-root user
 USER nodejs
@@ -84,8 +84,8 @@ USER nodejs
 # Expose ports
 EXPOSE 3000 5173 9229
 
-# Start development server
-CMD ["npm", "run", "dev:docker"]
+# FIX: Run vite with --host to allow external connections (crucial for Docker)
+CMD ["npm", "run", "dev", "--", "--host"]
 
 # ========================================
 # Production Stage
@@ -109,24 +109,5 @@ USER nodejs
 
 EXPOSE 3000
 
-# FIX: Run the 'serve' command pointing to the 'dist' folder
-# -s flag means "Single Page Application" (rewrites 404s to index.html for Vue Router)
+# Run the 'serve' command pointing to the 'dist' folder
 CMD ["serve", "-s", "dist", "-l", "3000"]
-
-# ========================================
-# Test Stage
-# ========================================
-#FROM build-deps AS test
-
-# Set environment
-#ENV NODE_ENV=test \
-#    CI=true
-
-# Copy source files
-#COPY --chown=nodejs:nodejs . .
-
-# Switch to non-root user
-#USER nodejs
-
-# Run tests with coverage
-#CMD ["npm", "run", "test:coverage"]

@@ -70,11 +70,12 @@ export default defineConfig(({ command }) => {
         server: {
             proxy: {
                 '^/api': {
-                    target: 'http://localhost:5000',
+                    target: 'http://backend:8080',
                     secure: false,
                     changeOrigin: true
                 }
             },
+            host: true, // Needed to expose the server outside the container
             port: 3000,
             // This will be valid certs in Dev, and undefined in Prod/Build
             https: httpsConfig 

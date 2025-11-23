@@ -15,7 +15,7 @@ function App() {
     const [files, setFiles] = useState({})
 
     useEffect(() => {
-        fetch("api/CodeExecution/getCodeExamples")
+        fetch("/api/CodeExecution/getCodeExamples")
             .then((response) => response.json())
             .then((data) => setFiles(data))
             .catch((error) => console.error("Error fetching data:", error));
@@ -29,7 +29,7 @@ function App() {
             code: code,
         }
 
-        const response = await fetch("api/CodeExecution/execute", {
+        const response = await fetch("/api/CodeExecution/execute", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -56,7 +56,7 @@ main = print_simple EPS (qinit False >>= hadamard)`
 
     return (
         <div>
-            <h1>Qiupper code compiler</h1>
+            <h1>Quipper code compiler</h1>
             <p>To use this tool correctly, make sure you are outputing the result to either EPS or PDF format. PS still outputs the circuit but on a smaller scale.</p>
             <p>You can check the examples provided in case of question</p>
             <Tabs defaultValue="code" className="w-[400px]">

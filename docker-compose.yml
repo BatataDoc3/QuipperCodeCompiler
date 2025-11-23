@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  # The .NET Backend
+  backend:
+    image: backend-image
+    build:
+      context: ./QuipperCodeCompiler.Server
+      dockerfile: Dockerfile # Adjust path if needed
+    ports:
+      - "5000:8080"  # Host:Container
+    environment:
+      - ASPNETCORE_HTTP_PORTS=8080
+
+  # The React/Vite Frontend
+  frontend:
+    image: frontend-image
+    build:
+      context: ./quippercodecompiler.client # Adjust folder name
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - "3000:3000"
+    environment:
+      - CHOKIDAR_USEPOLLING=true # Essential for Windows hot-reloading
+    depends_on:
+      - backend
