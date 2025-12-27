@@ -4,17 +4,16 @@ using System.IO;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
-
-
+using System.Linq;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 [ApiController]
 [Route("api/[controller]")]
 public class CodeExecutionController : ControllerBase
 {
-
     Random rand = new Random();
     string defaultAlgorithmsDirectory = "DefaultAlgorithms/"; 
-
 
     private readonly ILogger<CodeExecutionController> _logger;
 
@@ -23,17 +22,22 @@ public class CodeExecutionController : ControllerBase
         _logger = logger;
     }
 
-
     [HttpGet("getCodeExamples")]
     public async Task<IActionResult> GetCodeExamples()
     {
         _logger.LogInformation("Getting code files");
-        var files = Directory.GetFiles(defaultAlgorithmsDirectory, "*.hs")
-                                .ToDictionary(Path.GetFileName, async file => await System.IO.File.ReadAllTextAsync(file));
+        
+        if (!Directory.Exists(defaultAlgorithmsDirectory))
+        {
+            return Ok(new Dictionary<string, string>());
+        }
+
+        var files = Directory.GetFiles(defaultAlgorithmsDirectory, "*.hs");
         var result = new Dictionary<string, string>();
+        
         foreach (var file in files)
         {
-            result[file.Key] = await file.Value;
+            result[Path.GetFileName(file)] = await System.IO.File.ReadAllTextAsync(file);
         }
 
         return Ok(result);
@@ -42,57 +46,48 @@ public class CodeExecutionController : ControllerBase
     [HttpPost("execute")]
     public IActionResult ExecuteCode([FromBody] CodeRequest request)
     {
-
         var id = Math.Abs(rand.Next());
-
-        string path = Path.Combine(Directory.GetCurrentDirectory(), "CodeFiles\\" + id.ToString());
+        
+        // Use Path.Combine to ensure forward slashes on Linux
+        string folderName = id.ToString();
+        string baseDir = Path.Combine(Directory.GetCurrentDirectory(), "CodeFiles");
+        string path = Path.Combine(baseDir, folderName);
+        
         _logger.LogInformation("Path to be created: " + path);
         Directory.CreateDirectory(path);
 
+        string filePath = Path.Combine(path, "generated_code.hs");
+        string hsFilePath = Path.Combine("CodeFiles", folderName, "generated_code.hs");
+        string exeFilePath = Path.Combine("CodeFiles", folderName, "generated_code"); // Removed .exe for Linux
+        string epsFilePath = Path.Combine("CodeFiles", folderName, "output.eps");
+        string jpegFilePath = Path.Combine("CodeFiles", folderName, "output.jpeg");
 
-        string filePath = Path.Combine(Directory.GetCurrentDirectory(), "CodeFiles\\" + id + "\\generated_code.hs");
-        string hsFilePath = "CodeFiles\\" + id + "\\generated_code.hs";
-        string exeFilePath = "CodeFiles\\" + id + "\\generated_code.exe";
-        string objFilePath = "CodeFiles\\" + id + "\\generated_code.o";
-        string hiFilePath = "CodeFiles\\" + id + "\\generated_code.hi";
-        string epsFilePath = "CodeFiles\\" + id + "\\output.eps";
-        string jpegFilePath = "CodeFiles\\" + id + "\\output.jpeg";
+        _logger.LogInformation("Executing code in {Language}", request.Language);
 
-
-        _logger.LogInformation("Executing code in {Language}", request.Code);
-
-        // Generate file from the code if needed
         if (!GenerateFile(request.Language, request.Code, filePath))
         {
             return StatusCode(500, "Failed to generate file.");
         }
 
-
         var output = ExecuteFile(hsFilePath, exeFilePath, epsFilePath, jpegFilePath);
-
 
         if (System.IO.File.Exists(jpegFilePath))
         {
             var imageBytes = System.IO.File.ReadAllBytes(jpegFilePath);
-            Directory.Delete("CodeFiles\\" + id, true);
-            return File(imageBytes, "image/png");
+            try { Directory.Delete(path, true); } catch { }
+            return File(imageBytes, "image/jpeg");
         }
-        Directory.Delete("CodeFiles\\" + id, true);
-        return StatusCode(500, "Failed to generate image.");
+        
+        try { Directory.Delete(path, true); } catch { }
+        return StatusCode(500, $"Failed to generate image. Output: {output}");
     }
-
 
     private bool GenerateFile(string language, string code, string filePath)
     {
         try
         {
             _logger.LogInformation("Creating path: " + filePath);
-            using (FileStream fs = System.IO.File.Create(filePath))
-            {
-                byte[] info = new UTF8Encoding(true).GetBytes(code);
-                fs.Write(info, 0, info.Length);
-            }
-
+            System.IO.File.WriteAllText(filePath, code, new UTF8Encoding(false));
             return true;
         }
         catch (Exception ex)
@@ -105,12 +100,15 @@ public class CodeExecutionController : ControllerBase
     private string ExecuteFile(string hsFilePath, string exeFilePath, string epsFilePath, string jpegFilePath)
     {
         _logger.LogInformation("Executing File");
-        string command = "ghc -package quipper-language " + hsFilePath ;
+        
+        // Step 1: Compile with GHC
+        // Note: -o specifies output binary name
+        string compileCommand = $"ghc -package quipper-language {hsFilePath} -o {exeFilePath}";
 
         ProcessStartInfo psi = new ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = $"/C {command}",
+            FileName = "/bin/bash",
+            Arguments = $"-c \"{compileCommand}\"",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -125,24 +123,48 @@ public class CodeExecutionController : ControllerBase
 
             error = FilterGhcOutput(error);
 
-            if (!string.IsNullOrEmpty(error))
+            if (!string.IsNullOrEmpty(error) && error.Contains("error:"))
             {
                 Console.WriteLine("Compilation Error:\n" + error);
-                return error; // Return the error message if compilation fails
+                return error;
             }
         }
 
         // Step 2: Run the compiled Haskell program
-        string exeName = "chcp 65001 && " + exeFilePath + " > " + epsFilePath; // On Windows
-        if (Environment.OSVersion.Platform == PlatformID.Unix)
-        {
-            exeName = "./" + exeFilePath + " | Out-File .\\thing.ps -Encoding default"; // On Linux/macOS
-        }
+        // On Linux, we use ./path/to/exe and redirect to EPS
+        string runCommand = $"./{exeFilePath} > {epsFilePath}";
 
         psi = new ProcessStartInfo
         {
-            FileName = "cmd.exe",
-            Arguments = $"/C {exeName}",
+            FileName = "/bin/bash",
+            Arguments = $"-c \"{runCommand}\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        };
+
+        using (Process process = new Process { StartInfo = psi })
+        {
+            process.Start();
+            string error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            if (!string.IsNullOrEmpty(error))
+            {
+                Console.WriteLine("Execution Error:\n" + error);
+                // Not returning here because sometimes Quipper warns on stderr but still produces EPS
+            }
+        }
+
+        // Step 3: Convert EPS to JPEG using Ghostscript (gs)
+        // Linux Ghostscript command is usually 'gs'
+        string gsCommand = $"gs -dNOPAUSE -dBATCH -dEPSCrop -r300 -sDEVICE=jpeg -sOutputFile={jpegFilePath} {epsFilePath}";
+
+        psi = new ProcessStartInfo
+        {
+            FileName = "/bin/bash",
+            Arguments = $"-c \"{gsCommand}\"",
             RedirectStandardOutput = true,
             RedirectStandardError = true,
             UseShellExecute = false,
@@ -153,50 +175,19 @@ public class CodeExecutionController : ControllerBase
         {
             process.Start();
             string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-
             process.WaitForExit();
-
-            output = FilterGhcOutput(output);
-            error = FilterGhcOutput(error);
-
-            if (!string.IsNullOrEmpty(error))
-            {
-                Console.WriteLine("Execution Error:\n" + error);
-                return error; // Return execution errors if they occur
-            }
-
-            Console.WriteLine("Program Output:\n" + output);
-        }
-
-        psi = new ProcessStartInfo
-        {
-            FileName = "gswin64c",
-            Arguments = "-dNOPAUSE -dBATCH -dEPSCrop -r300 -sDEVICE=jpeg -sOutputFile=" + jpegFilePath + " " + epsFilePath,
-            RedirectStandardOutput = true,
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
-
-        using (Process process = Process.Start(psi))
-        {
-            string output = process.StandardOutput.ReadToEnd();
-            process.WaitForExit();
-
             return output;
         }
     }
 
-
     private string FilterGhcOutput(string output)
     {
+        if (string.IsNullOrEmpty(output)) return "";
         return string.Join("\n", output.Split('\n')
             .Where(line => !line.Contains("Loaded package environment from"))
             .ToArray()).Trim();
     }
-
 }
-
 
 public class CodeRequest
 {
