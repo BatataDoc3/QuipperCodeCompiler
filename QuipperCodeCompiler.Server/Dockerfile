@@ -28,8 +28,11 @@ RUN apt-get update && \
     gnupg \
     netbase \
     dnsutils \
+    ghostscript \
     --fix-missing && \
     rm -rf /var/lib/apt/lists/*
+
+
 
 # 2. Install Stack
 RUN apt-get update && curl -sSL https://get.haskellstack.org/ | sh
